@@ -1,0 +1,198 @@
+{
+  "version": "0.2.0",
+  "tools": [
+    {
+      "tool_name": "get_payment_ledger",
+      "source_ids": [
+        "src_payment_ledger"
+      ],
+      "parameters": [
+        "payment_id",
+        "account_id",
+        "invoice_id"
+      ],
+      "required_scope": "billing_ops"
+    },
+    {
+      "tool_name": "get_invoice",
+      "source_ids": [
+        "src_invoice_order"
+      ],
+      "parameters": [
+        "invoice_id",
+        "order_id",
+        "account_id"
+      ],
+      "required_scope": "billing_ops"
+    },
+    {
+      "tool_name": "get_subscription",
+      "source_ids": [
+        "src_subscription_billing"
+      ],
+      "parameters": [
+        "subscription_id",
+        "account_id"
+      ],
+      "required_scope": "billing_ops"
+    },
+    {
+      "tool_name": "get_partner_dispute",
+      "source_ids": [
+        "src_acquirer_feed"
+      ],
+      "parameters": [
+        "payment_id",
+        "dispute_id"
+      ],
+      "required_scope": "billing_ops"
+    },
+    {
+      "tool_name": "search_customer_messages",
+      "source_ids": [
+        "src_customer_messages"
+      ],
+      "parameters": [
+        "account_id",
+        "keywords"
+      ],
+      "required_scope": "support"
+    },
+    {
+      "tool_name": "get_ai_transcript",
+      "source_ids": [
+        "src_ai_transcript"
+      ],
+      "parameters": [
+        "conversation_id",
+        "ticket_id",
+        "account_id"
+      ],
+      "required_scope": "ai_governance"
+    },
+    {
+      "tool_name": "get_iam_record",
+      "source_ids": [
+        "src_iam_directory"
+      ],
+      "parameters": [
+        "user_id",
+        "account_id"
+      ],
+      "required_scope": "security_access"
+    },
+    {
+      "tool_name": "get_hr_role",
+      "source_ids": [
+        "src_hr_role_directory"
+      ],
+      "parameters": [
+        "user_id"
+      ],
+      "required_scope": "security_access"
+    },
+    {
+      "tool_name": "get_approval_record",
+      "source_ids": [
+        "src_access_approvals"
+      ],
+      "parameters": [
+        "request_id",
+        "user_id",
+        "account_id"
+      ],
+      "required_scope": "security_access"
+    },
+    {
+      "tool_name": "get_upload_record",
+      "source_ids": [
+        "src_document_upload"
+      ],
+      "parameters": [
+        "upload_id",
+        "account_id"
+      ],
+      "required_scope": "kyc_compliance"
+    },
+    {
+      "tool_name": "get_document_metadata",
+      "source_ids": [
+        "src_document_metadata"
+      ],
+      "parameters": [
+        "document_id",
+        "upload_id",
+        "account_id"
+      ],
+      "required_scope": "kyc_compliance"
+    },
+    {
+      "tool_name": "get_identity_check",
+      "source_ids": [
+        "src_identity_provider"
+      ],
+      "parameters": [
+        "case_id",
+        "document_id",
+        "account_id"
+      ],
+      "required_scope": "kyc_compliance"
+    },
+    {
+      "tool_name": "get_privacy_request",
+      "source_ids": [
+        "src_privacy_requests"
+      ],
+      "parameters": [
+        "request_id",
+        "account_id"
+      ],
+      "required_scope": "privacy_dpo"
+    },
+    {
+      "tool_name": "get_identity_status",
+      "source_ids": [
+        "src_customer_identity"
+      ],
+      "parameters": [
+        "request_id",
+        "account_id"
+      ],
+      "required_scope": "privacy_dpo"
+    },
+    {
+      "tool_name": "get_legal_hold",
+      "source_ids": [
+        "src_retention_legal_hold"
+      ],
+      "parameters": [
+        "request_id",
+        "case_id",
+        "account_id"
+      ],
+      "required_scope": "privacy_dpo_legal"
+    },
+    {
+      "tool_name": "get_secure_export",
+      "source_ids": [
+        "src_secure_export"
+      ],
+      "parameters": [
+        "request_id",
+        "export_id"
+      ],
+      "required_scope": "privacy_dpo"
+    }
+  ],
+  "response_statuses": [
+    "found",
+    "not_found",
+    "delayed",
+    "stale",
+    "permission_denied",
+    "partner_unavailable",
+    "conflicting",
+    "malformed",
+    "rate_limited"
+  ]
+}

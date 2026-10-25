@@ -1,0 +1,2 @@
+{"payment_id":"pay_001","account_id":"acct_001","invoice_id":"inv_001","amount":420.0,"currency":"EUR","state":"captured"}
+{"payment_id":"pay_005","account_id":"acct_005","invoice_id":"inv_005","amount":1800.0,"currency":"EUR","state":"open_dispute"}

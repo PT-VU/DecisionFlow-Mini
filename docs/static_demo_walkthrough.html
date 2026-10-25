@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DecisionFlow Mini — T-047 Walkthrough</title>
+  <style>
+    :root{--ink:#172033;--muted:#667085;--line:#d9e0ea;--paper:#fff;--bg:#f4f7fb;--blue:#2457d6;--amber:#b54708;--red:#b42318;--green:#067647}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+    main{max-width:1080px;margin:auto;padding:48px 24px 80px} h1{font-size:38px;margin:0 0 8px} h2{margin:0 0 12px;font-size:20px}
+    .lede{color:var(--muted);font-size:18px;max-width:760px}.bar{display:flex;gap:8px;flex-wrap:wrap;margin:26px 0}
+    .pill{background:#e8eefc;color:#2349a4;padding:6px 10px;border-radius:999px;font-weight:650}.pill.risk{background:#fee4e2;color:var(--red)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 4px 18px #22304a0a}
+    .wide{grid-column:1/-1}.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750}
+    code{background:#f0f3f8;padding:2px 5px;border-radius:4px} pre{white-space:pre-wrap;background:#111827;color:#e5e7eb;padding:16px;border-radius:10px;overflow:auto}
+    ol.flow{list-style:none;padding:0;counter-reset:step}.flow li{counter-increment:step;padding:14px 0 14px 52px;border-left:2px solid var(--line);margin-left:17px;position:relative}
+    .flow li:before{content:counter(step);position:absolute;left:-18px;top:12px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:white;font-weight:700}
+    .ok{color:var(--green);font-weight:700}.stop{color:var(--red);font-weight:700}.note{border-left:4px solid var(--amber);background:#fffaeb;padding:12px 16px;border-radius:6px}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}h1{font-size:30px}}
+  </style>
+</head>
+<body><main>
+  <div class="label">Static workflow walkthrough</div>
+  <h1>AI refund promise under dispute</h1>
+  <p class="lede">Ticket T-047 shows how the workflow binds findings to source fields, prevents an unsupported automated response, and routes a financially consequential AI incident to human review.</p>
+  <div class="bar"><span class="pill">AI answer complaint</span><span class="pill risk">High risk</span><span class="pill">Human review required</span><span class="pill">No external action</span></div>
+
+  <section class="grid">
+    <article class="card"><div class="label">Incoming ticket</div><h2>Customer-impact report</h2><p>“The assistant guaranteed a refund while the payment was under dispute.”</p></article>
+    <article class="card"><div class="label">Structured context</div><h2>Relevant source fields</h2><p><code>incident=unsupported_refund_promise</code><br><code>payment_state=open_dispute</code><br><code>customer_impact=financial</code></p></article>
+
+    <article class="card wide"><div class="label">Governed execution</div><h2>State-machine trace</h2>
+      <ol class="flow">
+        <li><strong>Intake Agent</strong> normalizes the request as an AI-answer complaint and preserves the original ticket.</li>
+        <li><strong>Evidence Retrieval Agent</strong> retrieves source-field records and policy sections <code>POL-AI-001.S01</code> and <code>POL-REV-001.S03</code>.</li>
+        <li><strong>Finding Agent</strong> creates findings whose locators include source, record, field path, timestamps, and content hash.</li>
+        <li><strong>Risk & Routing Agent</strong> outputs <code>risk=high</code>, <code>action=route_ai_incident_review</code>, and <code>route=ai_governance</code>.</li>
+        <li><strong>Response Drafting Agent</strong> creates a draft but records no refund or sending commitment.</li>
+        <li><strong>Compliance Gate</strong> verifies every finding and response claim, then stops at <span class="stop">human_review_required</span>.</li>
+      </ol>
+    </article>
+
+    <article class="card"><div class="label">Example provenance</div><h2>Field-level locator</h2><pre>{
+  "source_id": "ticket_system",
+  "record_id": "T-047",
+  "field_path": "$.public_context.payment_state",
+  "provenance_hash": "sha256(...)"
+}</pre></article>
+    <article class="card"><div class="label">Typed decision</div><h2>Machine-verifiable output</h2><pre>{
+  "risk": "high",
+  "action": "route_ai_incident_review",
+  "route": "ai_governance",
+  "requires_human_review": true
+}</pre></article>
+
+    <article class="card wide"><div class="label">Outcome</div><h2 class="ok">Safe handoff, not silent automation</h2><p>The workflow does not issue a refund, confirm that a refund exists, or send a customer message. A reviewer may approve, reject, or request a revision; that action is appended to the audit trail.</p><p class="note"><strong>Dataset limitation:</strong> v0.1 stores these operational facts in structured ticket context. v0.2 will move them to independent payment and AI-conversation sources without changing the finding-to-decision contract.</p></article>
+  </section>
+</main></body></html>

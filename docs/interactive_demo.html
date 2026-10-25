@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DecisionFlow Mini · Interactive Agent Workflow Demo</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --subtle: #98a2b3;
+      --line: #d9e0ea;
+      --paper: #ffffff;
+      --bg: #f4f7fb;
+      --blue: #2457d6;
+      --blue-soft: #eaf0ff;
+      --cyan: #087f8c;
+      --cyan-soft: #e6f7f8;
+      --amber: #b54708;
+      --amber-soft: #fff4df;
+      --red: #b42318;
+      --red-soft: #fee4e2;
+      --green: #067647;
+      --green-soft: #e8f7ef;
+      --purple: #6941c6;
+      --purple-soft: #f0ebff;
+      --shadow: 0 12px 35px rgba(28, 45, 79, .08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { max-width: 1440px; margin: 0 auto; padding: 28px 28px 70px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 26px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; color: #fff; background: linear-gradient(135deg, #2457d6, #6941c6); font-weight: 800; font-size: 17px; box-shadow: 0 8px 18px rgba(36,87,214,.26); }
+    .brand h1 { margin: 0; font-size: 19px; letter-spacing: -.02em; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .top-status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--subtle); }
+    .dot.live { background: var(--green); box-shadow: 0 0 0 4px var(--green-soft); }
+    .hero { margin: 0 0 24px; }
+    .eyebrow, .label { color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; }
+    .hero h2 { margin: 7px 0 8px; font-size: clamp(28px, 4vw, 44px); line-height: 1.08; letter-spacing: -.04em; max-width: 790px; }
+    .hero p { margin: 0; max-width: 820px; color: var(--muted); font-size: 16px; }
+    .notice { margin-top: 15px; padding: 11px 14px; border: 1px solid #cfe0ff; border-radius: 11px; color: #2349a4; background: var(--blue-soft); max-width: 930px; }
+    .workspace { display: grid; grid-template-columns: 315px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .sidebar, .main { display: grid; gap: 18px; min-width: 0; }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+    .panel-pad { padding: 18px; }
+    .panel h3, .panel h4 { margin: 0; }
+    .panel h3 { font-size: 16px; letter-spacing: -.01em; }
+    .panel h4 { font-size: 13px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 17px 18px 0; }
+    .panel-head p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .field { margin-top: 16px; }
+    .field label { display: block; margin-bottom: 7px; color: var(--ink); font-size: 12px; font-weight: 750; }
+    select, input[type="password"], input[type="text"] { width: 100%; border: 1px solid #cbd5e1; border-radius: 9px; padding: 10px 11px; color: var(--ink); background: #fff; outline: none; }
+    select:focus, input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(36,87,214,.12); }
+    .key-row { display: grid; grid-template-columns: 1fr auto; gap: 7px; }
+    .icon-btn { border: 1px solid #cbd5e1; border-radius: 9px; padding: 0 10px; color: var(--muted); background: #fff; }
+    .hint { margin: 7px 0 0; color: var(--muted); font-size: 11px; }
+    .config-state { margin: 12px 0 0; min-height: 20px; color: var(--muted); font-size: 12px; }
+    .config-state.ok { color: var(--green); }
+    .config-state.error { color: var(--red); }
+    .primary, .secondary, .danger { width: 100%; border-radius: 10px; padding: 11px 13px; font-weight: 750; transition: .18s ease; }
+    .primary { border: 1px solid var(--blue); color: #fff; background: var(--blue); box-shadow: 0 7px 14px rgba(36,87,214,.19); }
+    .primary:hover:not(:disabled) { transform: translateY(-1px); background: #1947bc; }
+    .secondary { border: 1px solid #cbd5e1; color: var(--ink); background: #fff; }
+    .secondary:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+    .danger { border: 1px solid #f4c7c3; color: var(--red); background: #fff; }
+    button:disabled { cursor: not-allowed; opacity: .48; box-shadow: none; }
+    .case-meta { margin-top: 15px; padding: 13px; border-radius: 11px; background: #f8fafc; border: 1px solid #e6ebf2; }
+    .case-title { font-weight: 780; }
+    .case-message { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+    .tag-row, .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag-row { margin-top: 10px; }
+    .tag, .chip { display: inline-flex; align-items: center; max-width: 100%; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 700; }
+    .tag { color: #2349a4; background: var(--blue-soft); }
+    .tag.risk-high { color: var(--red); background: var(--red-soft); }
+    .tag.risk-medium { color: var(--amber); background: var(--amber-soft); }
+    .tag.risk-critical { color: #7a271a; background: #ffd8d5; }
+    .tag.done { color: var(--green); background: var(--green-soft); }
+    .sidebar-note { padding: 13px 14px; border-left: 4px solid var(--amber); border-radius: 8px; color: #7a2e0b; background: var(--amber-soft); font-size: 12px; }
+    .input-panel { overflow: hidden; }
+    .input-content { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(260px, .88fr); gap: 16px; padding: 17px 18px 19px; }
+    .ticket-box { border: 1px solid #e6ebf2; border-radius: 12px; padding: 14px; background: #fbfcfe; }
+    .ticket-box .message { margin: 7px 0 0; font-size: 15px; line-height: 1.5; }
+    .ticket-box dl { display: grid; grid-template-columns: 105px 1fr; gap: 6px 12px; margin: 13px 0 0; font-size: 12px; }
+    .ticket-box dt { color: var(--muted); }
+    .ticket-box dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+    pre.payload { margin: 0; max-height: 210px; overflow: auto; color: #dce8ff; background: #111827; border-radius: 11px; padding: 13px; font: 11px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .progress-wrap { padding: 0 18px 18px; }
+    .progress-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px; color: var(--muted); font-size: 11px; }
+    .progress-track { height: 7px; overflow: hidden; border-radius: 99px; background: #e9eef5; }
+    .progress-bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--purple)); transition: width .35s ease; }
+    .execution { overflow: hidden; }
+    .timeline { padding: 17px 18px 21px; }
+    .stage { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 0 0 18px; }
+    .stage:last-child { padding-bottom: 0; }
+    .stage:not(:last-child)::before { content: ""; position: absolute; top: 31px; bottom: 0; left: 16px; width: 2px; background: #e4e9f1; }
+    .stage.done:not(:last-child)::before { background: #a9c3ff; }
+    .stage-marker { position: relative; z-index: 1; width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid #d4dce8; border-radius: 50%; color: var(--subtle); background: #fff; font-size: 12px; font-weight: 800; }
+    .stage.active .stage-marker { border-color: var(--blue); color: #fff; background: var(--blue); box-shadow: 0 0 0 5px var(--blue-soft); animation: pulse 1.25s infinite; }
+    .stage.done .stage-marker { border-color: var(--green); color: #fff; background: var(--green); }
+    .stage.waiting .stage-marker { border-color: var(--amber); color: #fff; background: var(--amber); }
+    .stage.skipped .stage-marker { border-color: #d4dce8; color: var(--subtle); background: #f6f8fb; }
+    .stage-card { min-width: 0; border: 1px solid #e5eaf1; border-radius: 12px; padding: 12px 14px; background: #fff; }
+    .stage.active .stage-card { border-color: #a9c3ff; background: #fbfdff; box-shadow: 0 7px 20px rgba(36,87,214,.08); }
+    .stage.waiting .stage-card { border-color: #f2c58c; background: #fffaf2; }
+    .stage.skipped .stage-card { color: var(--muted); background: #fafbfc; }
+    .stage-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .stage-title { font-weight: 800; }
+    .stage-agent { margin-left: 5px; color: var(--muted); font-size: 11px; font-weight: 550; }
+    .stage-state { flex: none; border-radius: 999px; padding: 3px 7px; color: var(--subtle); background: #f2f4f7; font-size: 10px; font-weight: 800; }
+    .stage.active .stage-state { color: #2349a4; background: var(--blue-soft); }
+    .stage.done .stage-state { color: var(--green); background: var(--green-soft); }
+    .stage.waiting .stage-state { color: var(--amber); background: var(--amber-soft); }
+    .stage-summary { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
+    .stage-detail { display: none; margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed #dbe2ec; color: var(--ink); font-size: 12px; }
+    .stage.active .stage-detail, .stage.done .stage-detail, .stage.waiting .stage-detail { display: block; }
+    .stage-detail strong { color: var(--blue); }
+    .lower-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 18px; }
+    .summary-body, .evidence-body { padding: 15px 18px 18px; }
+    .summary-flag { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; color: var(--purple); background: var(--purple-soft); font-size: 11px; font-weight: 800; }
+    .summary-text { margin: 12px 0 0; min-height: 76px; color: var(--ink); }
+    .log { margin: 12px 0 0; max-height: 145px; overflow: auto; border-top: 1px solid #edf0f4; }
+    .log-row { display: grid; grid-template-columns: 65px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid #edf0f4; color: var(--muted); font-size: 11px; }
+    .log-row .time { color: var(--subtle); font-variant-numeric: tabular-nums; }
+    .empty { color: var(--subtle); font-size: 12px; }
+    .evidence-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .evidence-table th { padding: 0 7px 8px 0; text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+    .evidence-table td { padding: 8px 7px 8px 0; border-top: 1px solid #edf0f4; vertical-align: top; overflow-wrap: anywhere; }
+    .evidence-table code { color: #344054; background: #f2f4f7; border-radius: 4px; padding: 2px 4px; font-size: 10px; }
+    .result { overflow: hidden; }
+    .result-body { padding: 16px 18px 19px; }
+    .result-section-title { margin: 0 0 8px; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 800; }
+    .conclusion-box, .outcome-box { margin-bottom: 15px; padding: 15px; border: 1px solid #cbdcff; border-radius: 12px; background: linear-gradient(135deg, #f8faff, #f4f0ff); }
+    .conclusion-box h4, .outcome-box h4 { margin: 0; color: #203d94; font-size: 17px; }
+    .conclusion-box p, .outcome-box p { margin: 7px 0 0; color: var(--ink); font-size: 13px; }
+    .result-subtitle { margin: 0 0 8px; color: var(--ink); font-size: 13px; font-weight: 800; }
+    .result-list { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+    .result-list li + li { margin-top: 5px; }
+    .outcome-box { border-color: #cce8d8; background: var(--green-soft); }
+    .outcome-box h4 { color: var(--green); }
+    .outcome-box p { color: #145c3b; }
+    .result-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 15px; }
+    .decision-box, .response-box { padding: 13px; border: 1px solid #e4e9f1; border-radius: 11px; background: #fbfcfe; }
+    .decision-box dl { display: grid; grid-template-columns: 80px 1fr; gap: 6px 10px; margin: 12px 0 0; font-size: 12px; }
+    .decision-box dt { color: var(--muted); }
+    .decision-box dd { margin: 0; font-weight: 750; overflow-wrap: anywhere; }
+    .response-box p { margin: 9px 0 0; color: var(--muted); font-size: 12px; }
+    .review-box { margin-top: 14px; padding: 12px 13px; border: 1px solid #f2c58c; border-radius: 11px; background: var(--amber-soft); }
+    .review-box p { margin: 0 0 10px; color: #7a2e0b; font-size: 12px; }
+    .review-box .secondary { width: auto; }
+    .guardrails { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+    .guardrail { border: 1px solid #cce8d8; border-radius: 999px; padding: 5px 8px; color: var(--green); background: var(--green-soft); font-size: 11px; font-weight: 700; }
+    .footer { margin-top: 26px; color: var(--muted); text-align: center; font-size: 11px; }
+    .hidden { display: none !important; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 4px var(--blue-soft); } 50% { box-shadow: 0 0 0 8px rgba(234,240,255,.6); } }
+    @media (max-width: 980px) { .workspace { grid-template-columns: 1fr; } .sidebar { grid-template-columns: repeat(2, minmax(0,1fr)); align-items: start; } .sidebar-note { grid-column: 1/-1; } }
+    @media (max-width: 700px) { .app { padding: 20px 14px 55px; } .topbar { align-items: flex-start; flex-direction: column; } .sidebar, .input-content, .lower-grid, .result-grid { grid-template-columns: 1fr; } .input-content { gap: 12px; } .ticket-box dl { grid-template-columns: 88px 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">DF</div>
+        <div><h1>DecisionFlow Mini</h1><p>Evidence-bound agent workflow · interactive demo</p></div>
+      </div>
+      <div class="top-status"><span id="liveDot" class="dot"></span><span id="topStatus">Runtime not configured</span></div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Interactive workflow demo</div>
+      <h2>See how an agent reads, decides, cites evidence, and safely closes a ticket.</h2>
+      <p>Select a provider, complete the local setup, choose a case, and trigger a single-channel workflow. Each stage shows its input, auditable summary, evidence references, and risk gate.</p>
+      <div class="notice"><strong>Boundary:</strong> the stage summary is an auditable work explanation, not hidden chain-of-thought. This page never uploads the API key and never issues refunds, sends messages, or changes an external system.</div>
+    </section>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <section class="panel panel-pad">
+          <div class="label">Step 01 · Runtime setup</div>
+          <h3 style="margin-top:6px">Runtime setup</h3>
+          <div class="field">
+            <label for="providerSelect">Model provider</label>
+            <select id="providerSelect">
+              <option value="mock">Local Mock (recommended · offline)</option>
+              <option value="openai">OpenAI-compatible API</option>
+              <option value="anthropic">Anthropic-compatible API (preview)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="apiKey">API Key <span style="color:var(--subtle);font-weight:500">(kept in page memory only)</span></label>
+            <div class="key-row"><input id="apiKey" type="password" placeholder="Optional for Local Mock"><button id="toggleKey" class="icon-btn" type="button">Show</button></div>
+            <p id="providerHint" class="hint">Local Mock needs no API key; this demo uses a local synthetic fixture.</p>
+          </div>
+          <button id="saveConfig" class="primary" type="button" style="margin-top:15px">Complete setup</button>
+          <div id="configState" class="config-state" role="status">Waiting for setup.</div>
+        </section>
+
+        <section class="panel panel-pad">
+          <div class="label">Step 02 · Trigger ticket</div>
+          <h3 style="margin-top:6px">Choose a case</h3>
+          <div class="field">
+            <label for="caseSelect">Ticket case</label>
+            <select id="caseSelect">
+              <option value="T-001">T-001 · Duplicate capture investigation (completes)</option>
+              <option value="T-008">T-008 · Refund request under dispute (review)</option>
+              <option value="T-047">T-047 · AI refund promise incident (review)</option>
+            </select>
+          </div>
+          <div id="caseMeta" class="case-meta"></div>
+          <button id="triggerBtn" class="primary" type="button" style="margin-top:14px" disabled>Trigger ticket and start workflow</button>
+          <button id="resetBtn" class="secondary" type="button" style="margin-top:8px">Reset demo</button>
+        </section>
+
+        <div class="sidebar-note"><strong>Safety:</strong> high and critical cases stop after the compliance gate and wait for human review. Review changes internal state only; it does not execute a business operation.</div>
+      </aside>
+
+      <main class="main">
+        <section class="panel input-panel">
+          <div class="panel-head"><div><div class="label">Input snapshot</div><h3 style="margin-top:5px">Current input</h3><p>This is the ticket and public lookup context received by the workflow.</p></div><div id="inputBadge" class="tag">Not triggered</div></div>
+          <div class="input-content">
+            <div id="ticketBox" class="ticket-box"></div>
+            <pre id="payloadBox" class="payload"></pre>
+          </div>
+          <div class="progress-wrap"><div class="progress-label"><span id="progressText">Waiting to start</span><span id="progressCount">0 / 9</span></div><div class="progress-track"><div id="progressBar" class="progress-bar"></div></div></div>
+        </section>
+
+        <section class="panel execution">
+          <div class="panel-head"><div><div class="label">Single-channel execution</div><h3 style="margin-top:5px">Agent execution</h3><p>Stages run in order; the next stage starts only after the current stage completes.</p></div><div id="executionState" class="tag">Idle</div></div>
+          <div id="timeline" class="timeline"></div>
+        </section>
+
+        <div class="lower-grid">
+          <section class="panel">
+            <div class="panel-head"><div><div class="label">Auditable rationale</div><h3 style="margin-top:5px">Current stage summary</h3><p>A short explanation of what is being done, why, and what it produces.</p></div></div>
+            <div class="summary-body">
+              <div class="summary-flag">◇ Auditable summary · not hidden chain-of-thought</div>
+              <p id="summaryText" class="summary-text">Configure the runtime and trigger a ticket to see the current stage explanation.</p>
+              <div id="eventLog" class="log"><div class="empty">No execution events yet.</div></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head"><div><div class="label">Evidence trace</div><h3 style="margin-top:5px">How evidence is bound</h3><p>Only retrieved field-level locators are shown; conclusions are not treated as evidence.</p></div></div>
+            <div id="evidenceBody" class="evidence-body"><div class="empty">Source, record, and field locators appear after evidence retrieval.</div></div>
+          </section>
+        </div>
+
+        <section id="resultPanel" class="panel result hidden">
+          <div class="panel-head"><div><div class="label">Output snapshot</div><h3 style="margin-top:5px">Task result</h3><p>The result includes a typed decision, constrained response draft, and safety boundary.</p></div><div id="resultBadge" class="tag"></div></div>
+          <div class="result-body">
+            <div class="result-section-title">1 · Final AI conclusion</div>
+            <div id="conclusionBox" class="conclusion-box"></div>
+            <div class="result-section-title">2 · Evidence reviewed and playbook applied</div>
+            <div class="result-grid">
+              <div id="playbookBox" class="decision-box"></div>
+              <div id="evidenceDecisionBox" class="response-box"></div>
+            </div>
+            <div class="result-section-title" style="margin-top:15px">3 · How the AI processed the case</div>
+            <div id="executionBox" class="decision-box"></div>
+            <div class="result-section-title" style="margin-top:15px">4 · Final outcome and safety boundary</div>
+            <div id="outcomeBox" class="outcome-box"></div>
+            <div id="reviewBox" class="review-box hidden"></div>
+            <div class="guardrails"><span class="guardrail">✓ Every finding cites evidence</span><span class="guardrail">✓ Conclusions carry provenance</span><span class="guardrail">✓ External side effects blocked</span><span class="guardrail">✓ Review actions audited</span></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <footer class="footer">DecisionFlow Mini · synthetic public fixture · local-only interactive presentation</footer>
+  </div>
+
+  <script>
+    const CASES = {
+      "T-001": {
+        id: "T-001", title: "Duplicate capture investigation (completes)", family: "billing_refund_dispute", risk: "medium", finalStatus: "completed",
+        action: "collect_evidence", route: "billing_ops", account: "acct_001", channel: "customer_portal",
+        message: "The invoice appears to contain a duplicate capture. Please check the payment records.",
+        sourceHints: ["src_payment_ledger", "src_invoice_order", "src_acquirer_feed"],
+        lookupKeys: { account_id: "acct_001", invoice_id: "inv_t001" }, evidenceCount: 31,
+        findings: [
+          "The support request was received in the ticket system.",
+          "The same invoice has two captured payments.",
+          "No dispute record was returned by the completed acquirer query."
+        ],
+        conclusion: "The duplicate capture is supported by invoice and payment records. Do not issue an automatic refund; keep the case in billing evidence collection.",
+        policies: ["POL-BILL-001.S01 · Duplicate payment investigation", "POL-REF-001.S01 · Refund status and duplicate prevention"],
+        policyRule: "Confirm payment status and invoice relation; collect evidence before any financial action.",
+        processing: ["Validate the duplicate-payment relationship across invoice and payment records.", "Route the case to billing operations for evidence collection.", "Do not execute a refund or send an external message."],
+        outcome: "The internal workflow completed with a billing evidence-collection decision. No financial action was executed.",
+        evidence: [
+          ["src_invoice_order", "inv_t001", "data.payment_ids", "found"],
+          ["src_payment_ledger", "pay_t001_a", "data.state", "captured"],
+          ["src_payment_ledger", "pay_t001_b", "data.state", "captured"],
+          ["src_acquirer_feed", "qry_t001_dispute", "status", "found"],
+          ["src_acquirer_feed", "qry_t001_dispute", "data.result_count", "0"]
+        ],
+        draft: "The same invoice has two captured payments. No dispute record was returned by the completed acquirer query. The case should remain in evidence collection before any financial action is considered."
+      },
+      "T-008": {
+        id: "T-008", title: "Refund request under dispute (review)", family: "billing_refund_dispute", risk: "high", finalStatus: "human_review_required",
+        action: "route_billing_review", route: "billing_ops", account: "acct_008", channel: "customer_portal",
+        message: "The card issuer has opened a dispute. Please refund the payment immediately as well.",
+        sourceHints: ["src_payment_ledger", "src_acquirer_feed", "src_invoice_order"],
+        lookupKeys: { account_id: "acct_008", invoice_id: "inv_t008", payment_id: "pay_t008" }, evidenceCount: 30,
+        findings: [
+          "The support request was received in the ticket system.",
+          "The external payment partner reports an open dispute.",
+          "The normal refund path is not started while the dispute is open."
+        ],
+        conclusion: "An external dispute is open and the normal refund path has not started. The immediate refund request must not be completed automatically.",
+        policies: ["POL-BILL-001.S01 · Duplicate payment investigation", "POL-REF-001.S01 · Refund status and duplicate prevention", "POL-REV-001.S03 · Review escalation"],
+        policyRule: "An open dispute requires billing review; do not complete a parallel refund automatically.",
+        processing: ["Confirm the dispute status and refund status from the payment ledger and acquirer feed.", "Route the case to billing operations for dispute review.", "Stop at human review before any financial action."],
+        outcome: "The workflow stopped at human_review_required. The immediate refund was not executed; a reviewer must decide the internal response.",
+        evidence: [
+          ["src_acquirer_feed", "dsp_t008", "data.status", "open"],
+          ["src_payment_ledger", "refund_t008", "data.status", "not_started"],
+          ["src_payment_ledger", "pay_t008", "data.state", "captured"],
+          ["src_acquirer_feed", "dsp_t008", "data.reason_code", "customer_dispute"],
+          ["src_payment_ledger", "pay_t008", "data.amount", "880 EUR"]
+        ],
+        draft: "The external payment partner reports an open dispute. The normal refund path is not started while the dispute is open. The request should be reviewed by billing operations."
+      },
+      "T-047": {
+        id: "T-047", title: "AI refund promise incident (review)", family: "ai_answer_complaint", risk: "high", finalStatus: "human_review_required",
+        action: "route_ai_incident_review", route: "ai_governance", account: "acct_011", channel: "internal_chat",
+        message: "The assistant guaranteed a refund while the payment was under dispute.",
+        sourceHints: ["src_ai_transcript", "src_payment_ledger", "src_acquirer_feed"],
+        lookupKeys: { account_id: "acct_011", conversation_id: "conv_t047", payment_id: "pay_t047", ticket_id: "T-047" }, evidenceCount: 25,
+        findings: [
+          "The support request was received in the ticket system.",
+          "The assistant transcript contains an unsupported refund guarantee.",
+          "The payment has an open external dispute."
+        ],
+        conclusion: "The AI transcript contains an unsupported refund guarantee while an external dispute is open. This is an AI governance incident, not an authorization to refund.",
+        policies: ["POL-AI-001.S01 · Unsupported AI promise", "POL-REV-001.S03 · AI incident review"],
+        policyRule: "Preserve the transcript and route the incident for review; do not repeat or operationalize an unsupported promise.",
+        processing: ["Compare the assistant transcript with the applicable AI policy version.", "Cross-check the payment and dispute records.", "Route the incident to AI governance and stop at human review."],
+        outcome: "The workflow stopped at human_review_required. The unsupported promise was not converted into a financial commitment or external message.",
+        evidence: [
+          ["src_ai_transcript", "conv_t047", "data.messages", "refund guarantee"],
+          ["src_ai_transcript", "conv_t047", "data.policy_version", "2026-01"],
+          ["src_acquirer_feed", "dsp_t047", "data.status", "open"],
+          ["src_payment_ledger", "pay_t047", "data.state", "captured"],
+          ["src_payment_ledger", "pay_t047", "data.amount", "420 GBP"]
+        ],
+        draft: "The assistant transcript contains an unsupported refund guarantee. The payment has an open external dispute. The complaint should be reviewed by the AI governance team."
+      }
+    };
+
+    const STAGES = [
+      { id: "intake", title: "Validate and normalize input", agent: "Intake Agent", input: "raw ticket + requester + dataset_version", output: "NormalizedTicket" },
+      { id: "adapter", title: "Build a read-only data plan", agent: "Data Adapter Agent", input: "source_hints + lookup_keys + source registry", output: "bounded read plan" },
+      { id: "retrieve", title: "Retrieve multi-source evidence", agent: "Evidence Retrieval Agent", input: "allow-listed source plan", output: "EvidenceItem[]" },
+      { id: "findings", title: "Build facts and conflicts", agent: "Finding Agent", input: "source fields + relationships", output: "Finding[]" },
+      { id: "route", title: "Assess risk and route", agent: "Risk & Routing Agent", input: "finding status + policy", output: "typed Decision" },
+      { id: "draft", title: "Draft a constrained response", agent: "Response Drafting Agent", input: "supported / unresolved findings", output: "claim-bound draft" },
+      { id: "gate", title: "Run the deterministic compliance gate", agent: "Compliance Gate", input: "provenance + claims + risk", output: "pass / stop" },
+      { id: "review", title: "Human review and continuation", agent: "Human Review", input: "high-risk decision", output: "approve / reject / revise" },
+      { id: "audit", title: "Persist audit snapshot and output", agent: "Audit Logger", input: "state transition + refs", output: "traceable result" }
+    ];
+
+    let selectedCase = CASES["T-001"];
+    let configured = false;
+    let running = false;
+    let approved = false;
+    let stageStates = STAGES.map(() => "pending");
+    let events = [];
+    let runToken = 0;
+
+    const $ = id => document.getElementById(id);
+    const esc = value => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    function riskTag(risk) { return `<span class="tag risk-${esc(risk)}">${esc(risk)}</span>`; }
+    function statusLabel(state) { return ({pending:"Pending",active:"Running",done:"Done",waiting:"Waiting for review",skipped:"Not required"})[state] || state; }
+
+    function renderCase() {
+      selectedCase = CASES[$("caseSelect").value];
+      const c = selectedCase;
+      $("caseMeta").innerHTML = `<div class="case-title">${esc(c.id)} · ${esc(c.title)}</div><div class="case-message">${esc(c.message)}</div><div class="tag-row"><span class="tag">${esc(c.family)}</span>${riskTag(c.risk)}<span class="tag">${esc(c.evidenceCount)} evidence items</span></div>`;
+      $("ticketBox").innerHTML = `<div class="label">Incoming ticket</div><div class="message">“${esc(c.message)}”</div><dl><dt>task_id</dt><dd>${esc(c.id)}</dd><dt>account_id</dt><dd>${esc(c.account)}</dd><dt>channel</dt><dd>${esc(c.channel)}</dd><dt>source_hints</dt><dd>${c.sourceHints.map(esc).join(", ")}</dd><dt>lookup_keys</dt><dd>${esc(Object.entries(c.lookupKeys).map(([k,v]) => `${k}=${v}`).join(" · "))}</dd></dl>`;
+      $("payloadBox").textContent = JSON.stringify({ task_id: c.id, message: c.message, account_id: c.account, channel: c.channel, dataset_version: "0.2.0", public_context: { source_hints: c.sourceHints, lookup_keys: c.lookupKeys } }, null, 2);
+      $("inputBadge").textContent = running ? "Running" : "Case selected";
+      $("inputBadge").className = `tag ${running ? "" : "done"}`;
+      renderTimeline();
+      renderEvidence();
+      renderResult();
+    }
+
+    function stageSummary(index) {
+      const c = selectedCase;
+      return [
+        `Validate the ticket schema, requester identity, and required fields; preserve the original message without inventing facts.`,
+        `Read the source registry and combine ${c.sourceHints.length} source hints with lookup keys into a bounded read-only plan; perform no writes.`,
+        `Query the allow-listed sources for ${c.evidenceCount} evidence items and preserve source status, record, field path, timestamps, and provenance hash.`,
+        `Turn cross-source fields into ${c.findings.length} findings; every finding must cite evidence_refs, and conflicts or unknowns remain explicit.`,
+        `Use finding status and policy refs to produce a typed decision with risk=${c.risk}, action=${c.action}, and route=${c.route}.`,
+        `Write only claims that have finding_refs into the response draft; make no refund, message, deletion, or other external commitment.`,
+        c.finalStatus === "completed" ? `The evidence chain, finding references, and response claims passed compliance, so the internal workflow may complete.` : `The evidence is traceable, but risk=${c.risk}; the compliance gate blocks automatic completion and routes to human review.`,
+        c.finalStatus === "completed" ? `Human review is not required; continue to finalization.` : (approved ? `The reviewer approved the internal result; no external business action is executed.` : `Wait for approve, reject, or request_revision; automation cannot continue.`),
+        `Persist state transitions, finding_refs, evidence_refs, and reviewer/audit data as a recoverable workflow snapshot.`
+      ][index];
+    }
+
+    function stageDetail(index) {
+      const c = selectedCase;
+      const details = [
+        `<strong>Output:</strong> ${STAGES[index].output} · category=${esc(c.family)}`,
+        `<strong>Safety:</strong> source IDs must come from the registry; an optional LLM can propose mappings but cannot read arbitrary paths.`,
+        `<strong>Evidence scope:</strong> ${c.sourceHints.map(s => `<code>${esc(s)}</code>`).join(" ")} · source status is retained.`,
+        `<strong>Key facts:</strong> ${c.findings.map(esc).join(" ")}`,
+        `<strong>Decision:</strong> risk=<code>${esc(c.risk)}</code> · action=<code>${esc(c.action)}</code> · route=<code>${esc(c.route)}</code>`,
+        `<strong>Constraint:</strong> every claim points to a finding; the draft does not mean an external action was executed.`,
+        `<strong>Gate:</strong> validate locators, hashes, finding_refs, claims, and the human-review invariant.`,
+        `<strong>Human action:</strong> change internal state and append an audit event only; never refund, send a message, or edit a source.`,
+        `<strong>Trace:</strong> source → EvidenceItem → Finding → Decision → ResponseClaim → AuditEvent.`
+      ];
+      return details[index];
+    }
+
+    function renderTimeline() {
+      $("timeline").innerHTML = STAGES.map((stage, index) => `<div class="stage ${stageStates[index]}" data-stage="${index}"><div class="stage-marker">${stageStates[index] === "done" ? "✓" : stageStates[index] === "waiting" ? "!" : index + 1}</div><div class="stage-card"><div class="stage-top"><div><span class="stage-title">${esc(stage.title)}</span><span class="stage-agent">${esc(stage.agent)}</span></div><span class="stage-state">${statusLabel(stageStates[index])}</span></div><div class="stage-summary">${esc(stageSummary(index))}</div><div class="stage-detail">${stageDetail(index)}</div></div></div>`).join("");
+    }
+
+    function renderEvidence() {
+      const c = selectedCase;
+      const visible = stageStates[2] === "done" || stageStates[3] === "done" || stageStates[4] === "done" || stageStates[5] === "done" || stageStates[6] === "done" || stageStates[7] === "done" || stageStates[8] === "done";
+      if (!visible) { $("evidenceBody").innerHTML = `<div class="empty">Source, record, and field locators appear after evidence retrieval.</div>`; return; }
+      $("evidenceBody").innerHTML = `<table class="evidence-table"><thead><tr><th>source</th><th>record</th><th>field path</th><th>observed value</th></tr></thead><tbody>${c.evidence.map(row => `<tr><td><code>${esc(row[0])}</code></td><td><code>${esc(row[1])}</code></td><td><code>${esc(row[2])}</code></td><td><span class="chip" style="color:var(--cyan);background:var(--cyan-soft)">${esc(row[3])}</span></td></tr>`).join("")}</tbody></table><div class="hint" style="margin-top:10px">Showing ${c.evidence.length} representative locators; the full run retrieved ${c.evidenceCount} evidence items.</div>`;
+    }
+
+    function renderResult() {
+      const c = selectedCase;
+      const shown = stageStates[6] === "done" || stageStates[7] === "done" || stageStates[8] === "done";
+      if (!shown) { $("resultPanel").classList.add("hidden"); return; }
+      $("resultPanel").classList.remove("hidden");
+      const waiting = c.finalStatus === "human_review_required" && !approved;
+      const finalStatus = waiting ? "human_review_required" : "completed";
+      $("resultBadge").textContent = finalStatus;
+      $("resultBadge").className = `tag ${waiting ? "risk-high" : "done"}`;
+      $("conclusionBox").innerHTML = `<h4>${esc(c.conclusion)}</h4><p>Decision status: <code>${esc(finalStatus)}</code> · Risk: ${riskTag(c.risk)} · Route: <code>${esc(c.route)}</code></p>`;
+      $("playbookBox").innerHTML = `<div class="result-subtitle">Processing playbook</div><ul class="result-list">${c.policies.map(policy => `<li><code>${esc(policy)}</code></li>`).join("")}</ul><div class="hint" style="margin-top:10px"><strong>Applied rule:</strong> ${esc(c.policyRule)} The playbook is selected from the ticket family, source findings, and risk signals.</div>`;
+      $("evidenceDecisionBox").innerHTML = `<div class="result-subtitle">Verified information used</div><ul class="result-list">${c.findings.map(finding => `<li>${esc(finding)}</li>`).join("")}</ul><div class="hint" style="margin-top:10px">${esc(c.evidenceCount)} evidence items were retrieved; representative locators are shown above.</div>`;
+      $("executionBox").innerHTML = `<div class="result-subtitle">Execution path</div><ol class="result-list">${c.processing.map(step => `<li>${esc(step)}</li>`).join("")}</ol><div class="hint" style="margin-top:10px">Action selected: <code>${esc(c.action)}</code> · Route: <code>${esc(c.route)}</code></div>`;
+      $("outcomeBox").innerHTML = `<h4>${waiting ? "Workflow stopped safely for review" : "Workflow completed"}</h4><p>${esc(c.outcome)}</p><p><strong>Response draft:</strong> ${esc(c.draft)}</p>`;
+      if (waiting) { $("reviewBox").classList.remove("hidden"); $("reviewBox").innerHTML = `<p><strong>Safety stop:</strong> this case cannot complete automatically. A reviewer must confirm the internal result; no external action will be triggered.</p><button id="approveBtn" class="secondary" type="button">Simulate human approval and complete internal workflow</button>`; $("approveBtn").addEventListener("click", approveReview); }
+      else { $("reviewBox").classList.add("hidden"); }
+    }
+
+    function renderSummary(text) { $("summaryText").textContent = text; }
+    function addEvent(text) { const stamp = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"}); events.push({stamp, text}); $("eventLog").innerHTML = events.map(item => `<div class="log-row"><span class="time">${esc(item.stamp)}</span><span>${esc(item.text)}</span></div>`).join(""); $("eventLog").scrollTop = $("eventLog").scrollHeight; }
+    function updateProgress(index, label) { const done = Math.max(0, index); $("progressBar").style.width = `${Math.min(100, (done / STAGES.length) * 100)}%`; $("progressCount").textContent = `${Math.min(done, STAGES.length)} / ${STAGES.length}`; $("progressText").textContent = label; }
+
+    async function runWorkflow() {
+      if (!configured || running) return;
+      running = true; approved = false; runToken += 1; const token = runToken;
+      stageStates = STAGES.map(() => "pending"); events = []; $("eventLog").innerHTML = `<div class="empty">Creating run_id…</div>`; $("resultPanel").classList.add("hidden"); $("triggerBtn").disabled = true; $("resetBtn").disabled = true; $("executionState").textContent = "Running"; $("executionState").className = "tag"; $("liveDot").className = "dot live"; $("topStatus").textContent = `Running ${selectedCase.id}`; renderTimeline(); renderEvidence(); renderSummary("Starting workflow…");
+      addEvent(`Received ${selectedCase.id}; created run_id and saved the received snapshot.`);
+      for (let i = 0; i < 7; i += 1) {
+        if (token !== runToken) return;
+        stageStates[i] = "active"; updateProgress(i, `Running: ${STAGES[i].title}`); renderTimeline(); renderSummary(stageSummary(i)); addEvent(`${STAGES[i].agent} started: ${STAGES[i].input}.`); await wait(690); if (token !== runToken) return; stageStates[i] = "done"; updateProgress(i + 1, `Completed: ${STAGES[i].title}`); renderTimeline(); renderEvidence(); addEvent(`${STAGES[i].agent} completed; produced ${STAGES[i].output}.`); await wait(160);
+      }
+      if (selectedCase.finalStatus === "human_review_required") {
+        stageStates[7] = "waiting"; stageStates[8] = "pending"; updateProgress(7, "Automatic completion blocked: waiting for human review"); renderTimeline(); renderEvidence(); renderResult(); renderSummary(stageSummary(7)); addEvent(`Compliance Gate: risk=${selectedCase.risk}; entered human_review_required. No external action was executed.`); $("executionState").textContent = "Waiting for review"; $("executionState").className = "tag risk-high"; $("topStatus").textContent = `${selectedCase.id} waiting for review`; running = false; $("resetBtn").disabled = false; return;
+      }
+      stageStates[7] = "skipped"; stageStates[8] = "active"; updateProgress(8, "Persisting audit snapshot"); renderTimeline(); renderSummary(stageSummary(8)); addEvent("Human review was not required; finalizing the workflow and writing the audit snapshot."); await wait(520); stageStates[8] = "done"; updateProgress(9, "Workflow completed"); renderTimeline(); renderEvidence(); renderResult(); addEvent("Audit Logger: wrote evidence_refs, finding_refs, and completed status."); $("executionState").textContent = "Completed"; $("executionState").className = "tag done"; $("liveDot").className = "dot live"; $("topStatus").textContent = `${selectedCase.id} completed`; renderSummary(stageSummary(8)); running = false; $("triggerBtn").disabled = false; $("resetBtn").disabled = false;
+    }
+
+    async function approveReview() {
+      if (running || selectedCase.finalStatus !== "human_review_required" || approved) return;
+      approved = true; stageStates[7] = "active"; renderTimeline(); renderSummary(stageSummary(7)); addEvent("Human Review: reviewer=demo-reviewer approved the internal result only."); await wait(520); stageStates[7] = "done"; stageStates[8] = "active"; updateProgress(8, "Recording the reviewed final state"); renderTimeline(); await wait(520); stageStates[8] = "done"; updateProgress(9, "Workflow completed"); renderTimeline(); renderResult(); addEvent("Audit Logger: appended the reviewer action and completed snapshot; no external side effect."); $("executionState").textContent = "Completed"; $("executionState").className = "tag done"; $("topStatus").textContent = `${selectedCase.id} completed after review`; $("triggerBtn").disabled = false; renderSummary(stageSummary(8));
+    }
+
+    function resetDemo() { runToken += 1; running = false; approved = false; stageStates = STAGES.map(() => "pending"); events = []; $("executionState").textContent = "Idle"; $("executionState").className = "tag"; $("liveDot").className = "dot"; $("topStatus").textContent = configured ? "Runtime ready · waiting to start" : "Runtime not configured"; $("triggerBtn").disabled = !configured; $("resetBtn").disabled = false; $("resultPanel").classList.add("hidden"); $("eventLog").innerHTML = `<div class="empty">No execution events yet.</div>`; updateProgress(0, "Waiting to start"); renderSummary("Configure the runtime and trigger a ticket to see the current stage explanation."); renderTimeline(); renderEvidence(); }
+
+    function syncProviderReadiness() {
+      const value = $("providerSelect").value;
+      if (value === "mock") {
+        configured = true;
+        $("configState").textContent = "✓ Local Mock ready: no API key is required; trigger a ticket directly.";
+        $("configState").className = "config-state ok";
+        $("triggerBtn").disabled = false;
+        $("liveDot").className = "dot live";
+        $("topStatus").textContent = "Local Mock ready · waiting to start";
+      } else if (!running) {
+        configured = false;
+        $("configState").textContent = "Enter an API key and click Complete setup.";
+        $("configState").className = "config-state";
+        $("triggerBtn").disabled = true;
+        $("liveDot").className = "dot";
+        $("topStatus").textContent = "Waiting for external provider setup";
+      }
+    }
+    $("providerSelect").addEventListener("change", () => { const value = $("providerSelect").value; $("providerHint").textContent = value === "mock" ? "Local Mock needs no API key; selecting it enables the local synthetic fixture." : "This page stores setup only and never sends a request to the provider; a real provider must be injected by the backend."; syncProviderReadiness(); });
+    $("toggleKey").addEventListener("click", () => { const input = $("apiKey"); input.type = input.type === "password" ? "text" : "password"; $("toggleKey").textContent = input.type === "password" ? "Show" : "Hide"; });
+    $("saveConfig").addEventListener("click", () => { const provider = $("providerSelect").value; const key = $("apiKey").value.trim(); if (provider !== "mock" && !key) { $("configState").textContent = "This provider requires an API key (kept in memory and never uploaded)."; $("configState").className = "config-state error"; return; } configured = true; $("configState").textContent = provider === "mock" ? "✓ Setup complete: Local Mock / local synthetic fixture" : "✓ Setup complete: provider stored in page memory"; $("configState").className = "config-state ok"; $("triggerBtn").disabled = false; $("liveDot").className = "dot live"; $("topStatus").textContent = "Runtime ready · waiting to start"; addEvent("Runtime setup complete; the API key never leaves this page."); });
+    $("caseSelect").addEventListener("change", () => { if (running) return; resetDemo(); renderCase(); });
+    $("triggerBtn").addEventListener("click", runWorkflow);
+    $("resetBtn").addEventListener("click", resetDemo);
+
+    renderCase();
+    renderTimeline();
+    syncProviderReadiness();
+  </script>
+</body>
+</html>

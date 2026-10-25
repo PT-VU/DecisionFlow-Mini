@@ -1,0 +1,6 @@
+{
+  "attachment_id": "att_001",
+  "task_id": "T-001",
+  "record_id": "inv_t001",
+  "synthetic_content": "fixture attachment; use source record for authoritative fields"
+}
