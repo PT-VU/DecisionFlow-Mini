@@ -15,3 +15,21 @@ services:
       timeout: 3s
       retries: 5
 
+  # This profile is for an Azure Storage Queue-backed integration run. Do not
+  # enable it with the default local in-memory queue: separate containers do
+  # not share LocalJobQueue state.
+  worker:
+    profiles: ["azure"]
+    build: .
+    command: ["decisionflow-worker"]
+    environment:
+      DECISIONFLOW_MODE: ${DECISIONFLOW_MODE:-mock}
+      DECISIONFLOW_DATA_ROOT: /app/data/public_v02
+      DECISIONFLOW_RUN_STORE: azure_table
+      DECISIONFLOW_AUDIT_STORE: azure_table
+      DECISIONFLOW_QUEUE_BACKEND: azure
+      DECISIONFLOW_PROVIDER: ${DECISIONFLOW_PROVIDER:-mock}
+      AZURE_STORAGE_ACCOUNT_URL: ${AZURE_STORAGE_ACCOUNT_URL:?Set AZURE_STORAGE_ACCOUNT_URL}
+      AZURE_STORAGE_QUEUE_URL: ${AZURE_STORAGE_QUEUE_URL:?Set AZURE_STORAGE_QUEUE_URL}
+      AZURE_QUEUE_NAME: ${AZURE_QUEUE_NAME:-decisionflow-jobs}
+

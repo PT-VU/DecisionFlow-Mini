@@ -77,7 +77,7 @@ class DataAdapterAgent:
         self.planner = planner
         self.last_plan: AdapterPlan | None = None
 
-    def discover(self, ticket: Ticket) -> AdapterPlan:
+    def discover(self, ticket: Ticket, *, allow_advisory: bool = True) -> AdapterPlan:
         context = ticket.public_context
         hints = tuple(dict.fromkeys([*context.get("source_hints", []), "src_ticket_system"]))
         plan = AdapterPlan(
@@ -90,7 +90,7 @@ class DataAdapterAgent:
                 if source_id not in self.store.source_records and source_id not in self.store.source_registry
             ),
         )
-        if self.planner is not None:
+        if allow_advisory and self.planner is not None:
             # The planner only sees metadata and the public ticket.  We keep its
             # output advisory until a future contract validator accepts it.
             proposal = self.planner.propose(
@@ -121,10 +121,16 @@ class DataAdapterAgent:
         self.last_plan = plan
         return plan
 
-    def retrieve(self, ticket: Ticket, normalized: NormalizedTicket) -> list[EvidenceItem]:
+    def retrieve(
+        self,
+        ticket: Ticket,
+        normalized: NormalizedTicket,
+        *,
+        allow_advisory: bool = True,
+    ) -> list[EvidenceItem]:
         if not self.store.has_source_bundle or ticket.dataset_version != "0.2.0":
             return []
-        plan = self.discover(ticket)
+        plan = self.discover(ticket, allow_advisory=allow_advisory)
         records = self.store.source_records_for_ticket(ticket.model_dump(mode="json"))
         evidence: list[EvidenceItem] = []
         counter = 1

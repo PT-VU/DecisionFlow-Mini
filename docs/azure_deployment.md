@@ -59,3 +59,17 @@ The worker requires `DECISIONFLOW_QUEUE_BACKEND=azure`, paired Azure Table run
 and audit stores, and the Storage account URL/queue URL variables. It renews
 message visibility while processing, retries bounded failures, and sends
 poison messages to `<queue-name>-poison`.
+
+For the stage-one run-unit check, build the image with Docker and verify both
+commands from the same image digest:
+
+```bash
+docker build --tag decisionflow-mini:stage1 .
+docker run --rm decisionflow-mini:stage1 uvicorn decisionflow.api:app --help
+docker run --rm decisionflow-mini:stage1 sh -c 'command -v decisionflow-worker'
+```
+
+The runtime image uses the frozen `uv.lock` resolution and runs as the
+non-root `appuser`. The default local Compose service uses an in-process queue;
+the `azure` Compose profile is the only profile that starts a separate Worker,
+because independent containers cannot share `LocalJobQueue` memory.

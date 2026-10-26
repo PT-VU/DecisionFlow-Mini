@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import uuid4
 
 from .base import ProviderError, parse_json_response
+from ..bridge_protocol import BridgeJobRequest, BridgePrompt
 
 
 @dataclass(frozen=True)
@@ -22,7 +24,14 @@ class CodexBridgeProvider:
         import urllib.error
         import urllib.request
 
-        body = json.dumps({"task_type": "text_completion", "system": system, "user": user}).encode("utf-8")
+        job = BridgeJobRequest(
+            job_id=str(uuid4()),
+            run_id=str(uuid4()),
+            task_type="text_completion",
+            prompt=BridgePrompt(system=system, user=user),
+            workspace_ref=".",
+        )
+        body = job.model_dump_json().encode("utf-8")
         request = urllib.request.Request(
             f"{self.base_url.rstrip('/')}/internal/bridge/complete",
             data=body,
@@ -32,8 +41,20 @@ class CodexBridgeProvider:
         try:
             with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                 payload = json.load(response)
+        except urllib.error.HTTPError as exc:
+            category = "bridge_unauthorized" if exc.code == 401 else "bridge_invalid_request" if exc.code == 422 else "bridge_http_error"
+            raise ProviderError(
+                f"Codex bridge HTTP error {exc.code}",
+                category=category,
+                retryable=exc.code >= 500,
+            ) from exc
         except (urllib.error.URLError, TimeoutError) as exc:
             raise ProviderError("Codex bridge unavailable", category="bridge_unavailable", retryable=True) from exc
+        if payload.get("status") not in {None, "completed"}:
+            raise ProviderError(
+                payload.get("error") or "Codex bridge execution failed",
+                category="bridge_execution_failed",
+            )
         output = payload.get("output") if isinstance(payload, dict) else None
         if not isinstance(output, str):
             raise ProviderError("Codex bridge response missing output", category="invalid_schema")

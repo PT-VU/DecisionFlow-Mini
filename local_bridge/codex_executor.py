@@ -20,8 +20,9 @@ class CodexExecutor:
         try:
             ensure_allowed_task(job.task_type)
             workspace = resolve_workspace(self.workspace_root, job.workspace_ref)
+            prompt = f"System instructions:\n{job.prompt.system}\n\nUser request:\n{job.prompt.user}"
             if job.task_type == "text_completion":
-                args = [self.codex_command, "exec", "--ephemeral", job.prompt]
+                args = [self.codex_command, "exec", "--ephemeral", prompt]
             elif job.task_type == "inspect_project":
                 args = [self.codex_command, "exec", "--ephemeral", "Inspect the project and summarize files safely."]
             else:

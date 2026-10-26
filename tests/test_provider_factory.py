@@ -3,6 +3,7 @@ from decisionflow.llm import build_provider
 from decisionflow.providers import MockProvider
 from decisionflow.providers.azure_openai import AzureOpenAIProvider
 from decisionflow.workflow import DecisionFlowWorkflow
+from decisionflow.models import ExecutionMode
 
 
 def test_mock_provider_factory_needs_no_secret():
@@ -22,8 +23,11 @@ class RecordingProvider:
 
 def test_provider_is_called_with_metadata_only(data_root, ticket):
     provider = RecordingProvider()
-    result = DecisionFlowWorkflow(data_root, provider=provider, provider_name="recording").run(ticket)
-    assert result.provider_name == "recording"
+    result = DecisionFlowWorkflow(data_root, provider=provider, provider_name="azure_openai").run(
+        ticket,
+        execution_mode=ExecutionMode.CLOUD_PROVIDER,
+    )
+    assert result.provider_name == "azure_openai"
     assert result.provider_advisory == "safe advisory"
     assert len(provider.calls) == 1
     assert "account_id" not in provider.calls[0][1]
@@ -47,7 +51,17 @@ class FailingProvider:
 
 
 def test_provider_failure_does_not_override_deterministic_workflow(data_root, ticket):
-    result = DecisionFlowWorkflow(data_root, provider=FailingProvider(), provider_name="failing").run(ticket)
+    result = DecisionFlowWorkflow(data_root, provider=FailingProvider(), provider_name="azure_openai").run(ticket)
+    assert result.gate_result and result.gate_result.passed
+    assert result.status.value == "completed"
+    assert result.provider_error is None
+
+
+def test_provider_failure_is_recorded_without_changing_cloud_decision(data_root, ticket):
+    result = DecisionFlowWorkflow(data_root, provider=FailingProvider(), provider_name="azure_openai").run(
+        ticket,
+        execution_mode=ExecutionMode.CLOUD_PROVIDER,
+    )
     assert result.gate_result and result.gate_result.passed
     assert result.status.value == "completed"
     assert result.provider_error

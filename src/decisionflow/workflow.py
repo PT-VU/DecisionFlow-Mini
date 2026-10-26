@@ -10,7 +10,7 @@ from .audit import AuditLogger
 from .compliance import ComplianceGate
 from .config import dataset_hash
 from .data import PublicDataStore
-from .models import ExecutionMode, ReviewRecord, ReviewerAction, Ticket, WorkflowResult, WorkflowStatus
+from .models import ExecutionMode, ReviewRecord, ReviewerAction, Ticket, WorkflowResult, WorkflowStatus, provider_allowed
 from .providers.base import TextProvider
 from .stores.base import RunStore
 from .stores.memory import MemoryRunStore
@@ -150,7 +150,11 @@ class DecisionFlowWorkflow:
             result.normalized_ticket = self.intake.run(ticket)
             self._transition(result, WorkflowStatus.NORMALIZED, "intake_agent")
 
-            result.evidence = self.retrieval.run(ticket, result.normalized_ticket)
+            result.evidence = self.retrieval.run(
+                ticket,
+                result.normalized_ticket,
+                allow_advisory=provider_allowed(execution_mode, self.provider_name),
+            )
             self._transition(result, WorkflowStatus.EVIDENCE_RETRIEVED, "policy_and_source_retrieval_agent")
 
             result.findings = self.finding.run(ticket, result.normalized_ticket, result.evidence)
@@ -159,7 +163,8 @@ class DecisionFlowWorkflow:
             result.decision = self.routing.run(result.normalized_ticket, result.evidence, result.findings)
             self._transition(result, WorkflowStatus.DECISION_MADE, "risk_and_routing_agent")
 
-            self._run_provider_advisory(result)
+            if provider_allowed(execution_mode, self.provider_name):
+                self._run_provider_advisory(result)
 
             result.draft_response = self.drafting.run(result.decision, result.findings)
             self._transition(result, WorkflowStatus.DRAFT_GENERATED, "response_drafting_agent")

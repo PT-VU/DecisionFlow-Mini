@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from threading import Event, Thread
 from time import sleep
 from uuid import uuid4
@@ -7,6 +8,8 @@ from uuid import uuid4
 from ..models import ExecutionMode, WorkflowStatus
 from ..workflow import DecisionFlowWorkflow
 from .queue import JobQueue
+
+logger = logging.getLogger("decisionflow.worker")
 
 
 class JobWorker:
@@ -19,6 +22,10 @@ class JobWorker:
         job = self.queue.claim(self.worker_id)
         if job is None:
             return False
+        logger.info(
+            "job_claimed",
+            extra={"job_id": job.job_id, "run_id": job.run_id, "execution_mode": job.execution_mode.value},
+        )
         try:
             pending = self.workflow.get(job.run_id)
             stop_heartbeat = Event()
@@ -43,6 +50,10 @@ class JobWorker:
                 skip_idempotency=True,
             )
             self.queue.complete(job.job_id, result)
+            logger.info(
+                "job_completed",
+                extra={"job_id": job.job_id, "run_id": job.run_id, "execution_mode": job.execution_mode.value},
+            )
         except Exception as exc:
             try:
                 failed = self.workflow.get(job.run_id)
@@ -62,4 +73,15 @@ class JobWorker:
             if "heartbeat_thread" in locals() and heartbeat_thread is not None:
                 heartbeat_thread.join(timeout=2)
         return True
+
+    def run_forever(self, *, stop_event: Event, poll_seconds: float = 2.0) -> None:
+        """Claim until shutdown; SIGTERM handlers set ``stop_event`` in main."""
+        while not stop_event.is_set():
+            try:
+                processed = self.process_one()
+            except Exception:
+                # The queue implementation owns retry/dead-letter behavior.
+                processed = False
+            if not processed:
+                stop_event.wait(poll_seconds)
 

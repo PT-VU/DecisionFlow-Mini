@@ -127,12 +127,13 @@ dashboard/              Optional Streamlit view
 
 ## Verification
 
-The public package currently passes the full deterministic suite (`30 passed`).
+The public package currently passes the full deterministic suite (`38 passed`).
 The development checkout passes its suite with one boundary-test skip because
-it intentionally keeps a local runtime database. Docker image build still
-requires a running Docker Desktop daemon. The package remains a demo-oriented
-release and does not claim production accuracy, regulatory compliance, or
-operational readiness.
+it intentionally keeps a local runtime database. Docker image build requires
+a running Docker daemon; it remains pending in this checkout because Docker
+Desktop's Linux daemon is not currently available. The package remains a
+demo-oriented release and does not claim production accuracy, regulatory
+compliance, or operational readiness.
 
 ## License
 

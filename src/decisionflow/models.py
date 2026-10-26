@@ -80,6 +80,22 @@ class ExecutionMode(StrEnum):
     LOCAL_CODEX_DEV = "local_codex_dev"
 
 
+def provider_allowed(mode: ExecutionMode, provider_name: str | None = None) -> bool:
+    """Whether a configured provider may make an advisory call for this mode."""
+    if mode == ExecutionMode.DETERMINISTIC:
+        return False
+    if provider_name is None:
+        return True
+    provider = provider_name.lower()
+    if mode == ExecutionMode.CLOUD_PROVIDER:
+        return provider in {"mock", "azure_openai", "azureopenai", "azureopenaiprovider"}
+    if mode == ExecutionMode.EXTERNAL_PROVIDER:
+        return provider in {"mock", "deepseek", "openai_compatible", "openaicompatibleprovider"}
+    if mode == ExecutionMode.LOCAL_CODEX_DEV:
+        return provider in {"codex_bridge", "codexbridgeprovider"}
+    return False
+
+
 class Requester(StrictModel):
     type: str = "customer"
     role: str = "unknown"

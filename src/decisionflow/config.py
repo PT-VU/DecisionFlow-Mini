@@ -102,6 +102,10 @@ class Settings:
             errors.append("AZURE_OPENAI_DEPLOYMENT or LLM_MODEL is required for azure_openai")
         if self.execution_mode == ExecutionMode.LOCAL_CODEX_DEV and not self.codex_workspace_root:
             errors.append("CODEX_WORKSPACE_ROOT is required for local_codex_dev")
+        if self.execution_mode == ExecutionMode.LOCAL_CODEX_DEV and self.provider != "codex_bridge":
+            errors.append("DECISIONFLOW_PROVIDER must be codex_bridge for local_codex_dev")
+        if self.provider == "codex_bridge" and not self.bridge_token:
+            errors.append("DECISIONFLOW_BRIDGE_TOKEN is required for codex_bridge")
         if self.rate_limit_per_minute < 1:
             errors.append("DECISIONFLOW_RATE_LIMIT_PER_MINUTE must be positive")
         if (self.run_store == "azure_table") != (self.audit_store == "azure_table"):

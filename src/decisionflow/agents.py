@@ -75,8 +75,14 @@ class EvidenceRetrievalAgent:
         self.store = store
         self.adapter = adapter or DataAdapterAgent(store)
 
-    def run(self, ticket: Ticket, normalized: NormalizedTicket) -> list[EvidenceItem]:
-        adapted = self.adapter.retrieve(ticket, normalized)
+    def run(
+        self,
+        ticket: Ticket,
+        normalized: NormalizedTicket,
+        *,
+        allow_advisory: bool = True,
+    ) -> list[EvidenceItem]:
+        adapted = self.adapter.retrieve(ticket, normalized, allow_advisory=allow_advisory)
         if adapted:
             evidence = list(adapted)
             counter = len(evidence) + 1

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 import time
+from threading import Event
 
 from ..config import Settings
 from ..llm import build_provider
@@ -45,13 +47,17 @@ def main() -> None:
     logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
     worker = build_azure_worker()
     poll_seconds = float(os.getenv("DECISIONFLOW_WORKER_POLL_SECONDS", "2"))
-    while True:
-        try:
-            if not worker.process_one():
-                time.sleep(poll_seconds)
-        except Exception:
-            logging.exception("workflow job failed; queue retry/dead-letter policy will apply")
-            time.sleep(poll_seconds)
+    stop_event = Event()
+
+    def request_stop(signum, frame) -> None:
+        del frame
+        logging.info("worker_shutdown_requested", extra={"signal": signum})
+        stop_event.set()
+
+    signal.signal(signal.SIGTERM, request_stop)
+    signal.signal(signal.SIGINT, request_stop)
+    worker.run_forever(stop_event=stop_event, poll_seconds=poll_seconds)
+    logging.info("worker_stopped")
 
 
 if __name__ == "__main__":

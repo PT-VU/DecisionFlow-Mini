@@ -69,21 +69,22 @@ class AzureStorageQueue:
             self.queue.delete_message(receipt[0], receipt[1])
 
     def fail(self, job_id: str, error: str) -> None:
-        del error
+        safe_error = str(error).replace("\r", " ").replace("\n", " ")[:2000]
         receipt = self._receipts.get(job_id)
         if receipt:
             attempt = self._attempts.get(job_id, 0)
             if attempt + 1 >= self.max_attempts:
                 self.dead_letter_queue.send_message(
-                    json.dumps({"job_id": job_id, "error": error, "attempt": attempt + 1})
+                    json.dumps({"job_id": job_id, "error": safe_error, "attempt": attempt + 1})
                 )
                 self.queue.delete_message(receipt[0], receipt[1])
                 self._receipts.pop(job_id, None)
                 self._attempts.pop(job_id, None)
             else:
-                self.queue.update_message(
+                updated = self.queue.update_message(
                     receipt[0], receipt[1], visibility_timeout=self.retry_delay_seconds
                 )
+                self._receipts[job_id] = (receipt[0], updated.pop_receipt)
 
     def heartbeat(self, job_id: str) -> None:
         receipt = self._receipts.get(job_id)

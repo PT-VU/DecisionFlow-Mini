@@ -12,7 +12,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --extra dev
+      - run: uv sync --frozen --extra dev
       - run: uv run pytest -q
       - run: docker build --tag decisionflow-mini:ci .
       - name: Check public image boundary

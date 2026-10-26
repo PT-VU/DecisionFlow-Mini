@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import logging
 from pathlib import Path
 from uuid import uuid4
 
@@ -15,6 +16,8 @@ from .llm import build_provider
 from .models import JobEnvelope, ReviewRecord, RunAccepted, RunRequest, Ticket, WorkflowResult, WorkflowStatus
 from .stores.azure_table import AzureTableAuditStore, AzureTableRunStore
 from .workflow import DecisionFlowWorkflow
+
+logger = logging.getLogger("decisionflow.api")
 
 
 def default_data_root() -> Path:
@@ -83,6 +86,10 @@ def create_app(
                 headers={"x-request-id": request_id},
             )
         response.headers["x-request-id"] = request_id
+        logger.info(
+            "request_complete",
+            extra={"request_id": request_id, "path": request.url.path, "status_code": response.status_code},
+        )
         return response
 
     @app.get("/health")
