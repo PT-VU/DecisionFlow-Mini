@@ -14,3 +14,9 @@ jobs:
           python-version: "3.12"
       - run: uv sync --extra dev
       - run: uv run pytest -q
+      - run: docker build --tag decisionflow-mini:ci .
+      - name: Check public image boundary
+        run: |
+          test ! -e evaluator_private
+          test ! -e runtime
+          test ! -e .env

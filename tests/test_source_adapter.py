@@ -1,4 +1,5 @@
 from pathlib import Path
+import pytest
 
 from decisionflow.data import load_jsonl
 from decisionflow.agents import FindingAgent
@@ -6,7 +7,10 @@ from decisionflow.models import Ticket, WorkflowStatus
 from decisionflow.workflow import DecisionFlowWorkflow
 
 
-SYNTHETIC_PUBLIC = Path(__file__).resolve().parents[1] / "data" / "public_v02"
+ROOT = Path(__file__).resolve().parents[1]
+SYNTHETIC_PUBLIC = ROOT / "data" / "public_v02"
+
+pytestmark = pytest.mark.skipif(not SYNTHETIC_PUBLIC.exists(), reason="v0.2 public bundle is not present in this checkout")
 
 
 def _ticket(task_id: str) -> Ticket:

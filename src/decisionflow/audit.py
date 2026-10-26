@@ -39,6 +39,12 @@ class AuditLogger:
                     )
                     """
                 )
+                connection.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_snapshot_idempotency
+                    ON workflow_snapshots(json_extract(snapshot_json, '$.idempotency_key'))
+                    """
+                )
 
     def record(
         self,
@@ -84,6 +90,20 @@ class AuditLogger:
                 handle.write(json.dumps(event.model_dump(mode="json"), ensure_ascii=False) + "\n")
         return event
 
+    # Protocol-compatible names used by cloud/store adapters.
+    def append(self, event: AuditEvent) -> AuditEvent:
+        return self.record(
+            run_id=event.run_id,
+            task_id=event.task_id,
+            event_type=event.event_type,
+            from_status=event.from_status,
+            to_status=event.to_status,
+            actor=event.actor,
+            payload=event.payload,
+            finding_refs=event.finding_refs,
+            evidence_refs=event.evidence_refs,
+        )
+
     def events(self, run_id: str) -> list[AuditEvent]:
         if self.path and self.path.suffix == ".db":
             with sqlite3.connect(self.path) as connection:
@@ -92,6 +112,9 @@ class AuditLogger:
                 ).fetchall()
             return [AuditEvent.model_validate_json(row[0]) for row in rows]
         return list(self._events.get(run_id, []))
+
+    def list_events(self, run_id: str) -> list[AuditEvent]:
+        return self.events(run_id)
 
     def save_snapshot(self, result: WorkflowResult) -> None:
         """Persist the complete workflow state, separately from append-only events."""
@@ -129,4 +152,19 @@ class AuditLogger:
             return WorkflowResult.model_validate_json(row[0]) if row else None
         snapshot = self._snapshots.get(run_id)
         return snapshot.model_copy(deep=True) if snapshot else None
+
+    def find_snapshot_by_idempotency_key(self, key: str) -> WorkflowResult | None:
+        if self.path and self.path.suffix == ".db":
+            with sqlite3.connect(self.path) as connection:
+                row = connection.execute(
+                    "SELECT snapshot_json FROM workflow_snapshots "
+                    "WHERE json_extract(snapshot_json, '$.idempotency_key') = ? "
+                    "ORDER BY updated_at DESC LIMIT 1",
+                    (key,),
+                ).fetchone()
+            return WorkflowResult.model_validate_json(row[0]) if row else None
+        for snapshot in self._snapshots.values():
+            if snapshot.idempotency_key == key:
+                return snapshot.model_copy(deep=True)
+        return None
 

@@ -67,6 +67,19 @@ class WorkflowStatus(StrEnum):
     FAILED = "failed"
 
 
+class ExecutionMode(StrEnum):
+    """Execution backend selected for a run.
+
+    Deterministic is the safe default. Provider and bridge modes may enrich a
+    run, but they never replace the deterministic routing or compliance gate.
+    """
+
+    DETERMINISTIC = "deterministic"
+    CLOUD_PROVIDER = "cloud_provider"
+    EXTERNAL_PROVIDER = "external_provider"
+    LOCAL_CODEX_DEV = "local_codex_dev"
+
+
 class Requester(StrictModel):
     type: str = "customer"
     role: str = "unknown"
@@ -221,6 +234,14 @@ class WorkflowResult(StrictModel):
     run_id: str
     status: WorkflowStatus
     ticket: Ticket
+    execution_mode: ExecutionMode = ExecutionMode.DETERMINISTIC
+    dataset_ref: str = "public:default"
+    idempotency_key: str | None = None
+    job_id: str | None = None
+    provider_name: str = "deterministic"
+    provider_latency_ms: float | None = None
+    provider_error: str | None = None
+    provider_advisory: str | None = None
     normalized_ticket: NormalizedTicket | None = None
     evidence: list[EvidenceItem] = Field(default_factory=list)
     findings: list[Finding] = Field(default_factory=list)
@@ -231,4 +252,27 @@ class WorkflowResult(StrictModel):
     audit_events: list[AuditEvent] = Field(default_factory=list)
     final_response: str | None = None
     error: str | None = None
+
+
+class RunRequest(StrictModel):
+    ticket: Ticket
+    execution_mode: ExecutionMode = ExecutionMode.DETERMINISTIC
+    dataset_ref: str = "public:default"
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=200)
+
+
+class RunAccepted(StrictModel):
+    run_id: str
+    job_id: str
+    status: WorkflowStatus
+    execution_mode: ExecutionMode
+
+
+class JobEnvelope(StrictModel):
+    job_id: str
+    run_id: str
+    execution_mode: ExecutionMode
+    payload_ref: str | None = None
+    attempt: int = 0
+    created_at: datetime = Field(default_factory=utc_now)
 

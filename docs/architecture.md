@@ -126,6 +126,42 @@ as a separate SQLite snapshot. A new workflow process can recover a run waiting
 for human review, continue it once, and reject duplicate review submissions.
 This separation provides both an audit history and a resumable workflow state.
 
+## Cloud execution boundary
+
+The synchronous `/v1/workflows` route remains for backwards-compatible local
+calls. Remote clients should use the asynchronous contract:
+
+```text
+POST /v1/runs
+  -> RunStore creates a RECEIVED snapshot
+  -> JobQueue receives a typed JobEnvelope
+  -> worker claims the job
+  -> deterministic workflow executes
+  -> RunStore saves each transition
+  -> GET /v1/runs/{run_id} reads the durable result
+```
+
+Local mock mode uses `MemoryRunStore` and `LocalJobQueue`. Local development can
+use SQLite snapshots. Azure mode uses the optional Azure Table and Storage
+Queue adapters and does not depend on the container filesystem for run state.
+Azure Blob is reserved for large artifacts. `Idempotency-Key` (or the body
+`idempotency_key`) maps repeated submissions to the same run, and a process-local
+rate limiter is enabled by default as a last-resort guard; production deployments
+should put Front Door/API Management and Entra ID in front of the app.
+
+The Codex bridge is deliberately kept as a separate localhost-only service.
+Its token-gated completion endpoint is not mounted on the externally reachable
+API, so a cloud request cannot become an arbitrary local command or filesystem
+operation. The bridge executor also allow-lists task types, uses `shell=False`,
+and confines work to `CODEX_WORKSPACE_ROOT`.
+
+`GET /health/live` is a liveness probe. `GET /health/ready` validates selected
+provider, storage, data-root, and local Codex configuration without returning
+secrets. The Container Apps Bicep template in `infra/` provisions the storage,
+queue, blob, logging, and app boundary but deliberately leaves registry
+credentials, Key Vault references, and identity role assignments to the
+operator-controlled deployment process.
+
 ## Public/private isolation
 
 The runtime reads only the configured public root. The private pattern catalog,
@@ -143,6 +179,13 @@ Mock mode is the baseline. An OpenAI-compatible text provider is isolated behind
 - human-review requirements;
 - external actions;
 - workflow completion.
+
+The deployed provider factory supports Mock, Azure OpenAI / Foundry v1,
+DeepSeek, OpenAI-compatible, and local bridge boundaries. Provider calls are
+metadata-only by default: the adapter planner receives schema metadata plus
+redacted ticket shape, while the workflow connectivity advisory receives a
+fixed contract. Raw ticket messages, account identifiers, evidence values,
+findings, and routing details do not leave the deterministic process.
 
 ## Adapter safety and migration path
 

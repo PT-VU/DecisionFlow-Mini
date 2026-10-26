@@ -33,17 +33,20 @@ class LLMAdapterPlanner:
         self.provider = provider
 
     def propose(self, *, schema_profile: dict[str, Any], ticket: dict[str, Any]) -> dict[str, Any]:
-        raw = self.provider.complete(
-            system=(
-                "You are a read-only schema adapter planner. Return JSON only with "
-                "source_ids (array) and optional mapping_notes. Never invent source IDs."
-            ),
-            user=json.dumps(
-                {"schema_profile": schema_profile, "ticket": ticket},
-                ensure_ascii=False,
-                sort_keys=True,
-            ),
-        )
+        try:
+            raw = self.provider.complete(
+                system=(
+                    "You are a read-only schema adapter planner. Return JSON only with "
+                    "source_ids (array) and optional mapping_notes. Never invent source IDs."
+                ),
+                user=json.dumps(
+                    {"schema_profile": schema_profile, "ticket": ticket},
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+            )
+        except Exception:
+            return {}
         try:
             proposal = json.loads(raw)
         except (TypeError, json.JSONDecodeError):
@@ -92,7 +95,13 @@ class DataAdapterAgent:
             # output advisory until a future contract validator accepts it.
             proposal = self.planner.propose(
                 schema_profile=self.store.schema_profile(),
-                ticket=ticket.model_dump(mode="json"),
+                ticket={
+                    "category": ticket.family.value if ticket.family else None,
+                    "channel": ticket.channel,
+                    "dataset_version": ticket.dataset_version,
+                    "has_account_reference": bool(ticket.account_id),
+                    "has_attachments": bool(ticket.attachments),
+                },
             )
             if isinstance(proposal, dict):
                 proposed_sources = proposal.get("source_ids")

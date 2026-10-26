@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+.uv-cache
+.pytest_cache
+.pytest-tmp
+runtime
+logs
+.env
+evaluator_private
+gold_labels
+patterns
+evidence_graphs
+**/*.db
+**/__pycache__
+tests
+docs/interactive_demo.html
