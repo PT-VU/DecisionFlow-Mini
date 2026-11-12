@@ -87,7 +87,10 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
         {
           name: 'decisionflow-api'
           image: containerImage
-          resources: { cpu: 1, memory: '1Gi' }
+          // Consumption requires 0.5 CPU + 1Gi as the smallest valid
+          // combination for this prototype. Keep the default deliberately
+          // conservative until a measured workload justifies more capacity.
+          resources: { cpu: json('0.5'), memory: '1Gi' }
           env: [
             { name: 'DECISIONFLOW_DATA_ROOT', value: '/app/data/public_v02' }
             { name: 'DECISIONFLOW_RUN_STORE', value: 'azure_table' }
@@ -124,7 +127,8 @@ resource worker 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'decisionflow-worker'
           image: containerImage
           command: ['decisionflow-worker']
-          resources: { cpu: 1, memory: '1Gi' }
+          // Match the API's low-cost valid Consumption profile.
+          resources: { cpu: json('0.5'), memory: '1Gi' }
           env: [
             { name: 'DECISIONFLOW_DATA_ROOT', value: '/app/data/public_v02' }
             { name: 'DECISIONFLOW_RUN_STORE', value: 'azure_table' }

@@ -6,8 +6,12 @@ Azure Queue messages, executes the deterministic workflow, persists the result,
 and acknowledges or retries each message. It also assigns both app identities the
 Storage Blob, Queue and Table Data Contributor roles. It intentionally does
 not create a public registry, store an API key, or grant ACR administrator
-credentials. Configure a private registry and managed identity access in the target subscription, then deploy
-with an operator-controlled command:
+credentials. The repository's GitHub Actions workflow publishes a public GHCR
+image at `ghcr.io/pt-vu/decisionflow-mini:stage1-review`; use that image for
+the low-cost prototype deployment. If the package is not yet public in
+GitHub's package settings, change its visibility before deploying.
+
+Deploy with an operator-controlled command:
 
 ```bash
 az deployment group create \
