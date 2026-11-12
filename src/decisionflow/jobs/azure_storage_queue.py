@@ -28,14 +28,26 @@ class AzureStorageQueue:
 
             credential = DefaultAzureCredential()
         self.queue = QueueClient(account_url=account_url, queue_name=queue_name, credential=credential)
-        self.queue.create_queue()
+        self._ensure_queue(self.queue)
         self.visibility_timeout_seconds = visibility_timeout_seconds
         self.max_attempts = max_attempts
         self.retry_delay_seconds = retry_delay_seconds
         self.dead_letter_queue = QueueClient(account_url=account_url, queue_name=f"{queue_name}-poison", credential=credential)
-        self.dead_letter_queue.create_queue()
+        self._ensure_queue(self.dead_letter_queue)
         self._receipts: dict[str, tuple[str, str]] = {}
         self._attempts: dict[str, int] = {}
+
+    @staticmethod
+    def _ensure_queue(queue: Any) -> None:
+        """Create a queue when missing, but tolerate ARM-precreated queues."""
+        try:
+            queue.create_queue()
+        except Exception as exc:
+            # azure-core's ResourceExistsError is intentionally checked by
+            # class name so this adapter remains importable without the
+            # optional Azure SDK in local/mock mode.
+            if exc.__class__.__name__ != "ResourceExistsError":
+                raise
 
     def enqueue(self, job: JobEnvelope) -> None:
         self.queue.send_message(job.model_dump_json())

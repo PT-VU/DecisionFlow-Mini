@@ -54,6 +54,26 @@ resource jobsQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-
   name: 'decisionflow-jobs'
 }
 
+resource poisonQueue 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-05-01' = {
+  parent: queueService
+  name: 'decisionflow-jobs-poison'
+}
+
+resource tableService 'Microsoft.Storage/storageAccounts/tableServices@2023-05-01' = {
+  parent: storage
+  name: 'default'
+}
+
+resource runsTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableService
+  name: 'DecisionFlowRuns'
+}
+
+resource auditTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableService
+  name: 'DecisionFlowAudit'
+}
+
 resource environment 'Microsoft.App/managedEnvironments@2023-05-01' = {
   name: envName
   location: location
