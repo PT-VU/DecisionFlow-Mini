@@ -65,7 +65,7 @@ class AzureTableRunStore:
     def health_check(self) -> None:
         # A bounded query exercises the data-plane credential without mutating
         # application state.
-        next(iter(self.table.query_entities(results_per_page=1)), None)
+        next(iter(self.table.query_entities(query_filter="PartitionKey ne ''", results_per_page=1)), None)
 
 
 class AzureTableAuditStore:
@@ -145,4 +145,4 @@ class AzureTableAuditStore:
         return None
 
     def health_check(self) -> None:
-        next(iter(self.table.query_entities(results_per_page=1)), None)
+        next(iter(self.table.query_entities(query_filter="PartitionKey ne ''", results_per_page=1)), None)
